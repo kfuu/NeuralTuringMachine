@@ -1,4 +1,11 @@
-This is a forked repository.
+This is a forked repository. The below text underneath the divider is not written by me; it is from the README from the original repository.
+
+I believe the code is supposed to be run with the command:
+```python run_tasks.py --experiment_name ntm --task associative_recall```
+
+However, I'm not 100% sure and it was unclear what the proper procedure was.
+
+-----
 
 **Update 2019-05-26: Google has integrated our NTM implementation into the official TensorFlow release. For more details read here: https://www.scss.tcd.ie/joeran.beel/blog/2019/05/25/google-integrates-our-neural-turing-machine-implementation-in-tensorflow/**
 
