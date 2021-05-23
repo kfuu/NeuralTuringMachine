@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 import argparse
 
+tf.compat.v1.disable_eager_execution()
+
 parser = argparse.ArgumentParser()
 
 def str2bool(v):
