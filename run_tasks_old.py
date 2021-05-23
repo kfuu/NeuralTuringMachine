@@ -68,14 +68,14 @@ class BuildModel(object):
     def _build_model(self):
         if args.mann == 'none':
             def single_cell(num_units):
-                return tf.compat.v1.nn.rnn_cell.BasicLSTMCell(num_units, forget_bias=1.0)
+                return tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1.0)
 
             cell = tf.contrib.rnn.OutputProjectionWrapper(
-                tf.compat.v1.nn.rnn_cell.MultiRNNCell([single_cell(args.num_units) for _ in range(args.num_layers)]),
+                tf.contrib.rnn.MultiRNNCell([single_cell(args.num_units) for _ in range(args.num_layers)]),
                 args.num_bits_per_vector,
                 activation=None)
 
-            initial_state = tuple(tf.nn.rnn_cell.LSTMStateTuple(
+            initial_state = tuple(tf.contrib.rnn.LSTMStateTuple(
                 c=expand(tf.tanh(learned_init(args.num_units)), dim=0, N=args.batch_size),
                 h=expand(tf.tanh(learned_init(args.num_units)), dim=0, N=args.batch_size))
                 for _ in range(args.num_layers))
@@ -88,9 +88,9 @@ class BuildModel(object):
                     clip_value=args.clip_value, init_mode=args.init_mode)
             else:
                 def single_cell(num_units):
-                    return tf.compat.v1.nn.rnn_cell.BasicLSTMCell(num_units, forget_bias=1.0)
+                    return tf.contrib.rnn.BasicLSTMCell(num_units, forget_bias=1.0)
 
-                controller = tf.compat.v1.nn.rnn_cell.MultiRNNCell(
+                controller = tf.contrib.rnn.MultiRNNCell(
                     [single_cell(args.num_units) for _ in range(args.num_layers)])
 
                 cell = NTMCell(controller, args.num_memory_locations, args.memory_size,
@@ -98,7 +98,7 @@ class BuildModel(object):
                     output_dim=args.num_bits_per_vector,
                     clip_value=args.clip_value)
         
-        output_sequence, _ = tf.compat.v1.nn.dynamic_rnn(
+        output_sequence, _ = tf.nn.dynamic_rnn(
             cell=cell,
             inputs=self.inputs,
             time_major=False,
@@ -119,23 +119,23 @@ class BuildTModel(BuildModel):
 
         if args.task in ('copy', 'associative_recall'):
             cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(labels=outputs, logits=self.output_logits)
-            self.loss = tf.reduce_sum(input_tensor=cross_entropy)/args.batch_size
+            self.loss = tf.reduce_sum(cross_entropy)/args.batch_size
 
         if args.optimizer == 'RMSProp':
-            optimizer = tf.compat.v1.train.RMSPropOptimizer(args.learning_rate, momentum=0.9, decay=0.9)
+            optimizer = tf.train.RMSPropOptimizer(args.learning_rate, momentum=0.9, decay=0.9)
         elif args.optimizer == 'Adam':
-            optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=args.learning_rate)
+            optimizer = tf.train.AdamOptimizer(learning_rate=args.learning_rate)
 
-        trainable_variables = tf.compat.v1.trainable_variables()
-        grads, _ = tf.clip_by_global_norm(tf.gradients(ys=self.loss, xs=trainable_variables), args.max_grad_norm)
+        trainable_variables = tf.trainable_variables()
+        grads, _ = tf.clip_by_global_norm(tf.gradients(self.loss, trainable_variables), args.max_grad_norm)
         self.train_op = optimizer.apply_gradients(zip(grads, trainable_variables))
 
-with tf.compat.v1.variable_scope('root'):
-    max_seq_len_placeholder = tf.compat.v1.placeholder(tf.int32)
-    inputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector+1))
-    outputs_placeholder = tf.compat.v1.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
+with tf.variable_scope('root'):
+    max_seq_len_placeholder = tf.placeholder(tf.int32)
+    inputs_placeholder = tf.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector+1))
+    outputs_placeholder = tf.placeholder(tf.float32, shape=(args.batch_size, None, args.num_bits_per_vector))
     model = BuildTModel(max_seq_len_placeholder, inputs_placeholder, outputs_placeholder)
-    initializer = tf.compat.v1.global_variables_initializer()
+    initializer = tf.global_variables_initializer()
 
 # training
 
@@ -164,7 +164,7 @@ elif args.task == 'associative_recall':
     if args.curriculum == 'prediction_gain':
         exp3s = Exp3S(args.max_seq_len-1, 0.001, 0, 0.05)
 
-sess = tf.compat.v1.Session()
+sess = tf.Session()
 sess.run(initializer)
 
 if args.verbose:
