@@ -345,7 +345,7 @@ for i in range(args.num_train_steps):
             if args.task == 'copy':
                 curriculum_point = min(target_point, 2 * curriculum_point)
             elif args.task == 'associative_recall':
-                curriculum_point = min(target_point, curriculum_point+1)
+                curriculum_point = min(target_point, curriculum_point+2)
 
         logger.info('----EVAL----')
         logger.info('target task error/loss: {0},{1}'.format(target_task_error, target_task_loss))
